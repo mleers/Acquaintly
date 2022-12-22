@@ -5,6 +5,7 @@
 //  Created by Mitch on 12/21/22.
 //
 
+import CoreLocation
 import SwiftUI
 
 struct AddPersonView: View {
@@ -15,10 +16,14 @@ struct AddPersonView: View {
     @State private var name = ""
     @State private var image: Image?
     @State private var inputImage: UIImage?
+    @State private var location: CLLocationCoordinate2D?
     
+    @State private var hasLocationSwitchOn = false
     @State private var isShowingImagePicker = false
     @State private var isShowingConfirmAlert = false
-        
+    
+    let locationFetcher = LocationFetcher()
+    
     var hasImageAndName: Bool {
         inputImage != nil && !name.isEmpty
     }
@@ -43,14 +48,42 @@ struct AddPersonView: View {
                 }
                 
                 Section("Name") {
-                    TextField("Name", text: $name)
+                    TextField("Person's name", text: $name)
                 }
+                
+                Section("Location") {
+                    Toggle("Save Location?",
+                           isOn: $hasLocationSwitchOn.animation())
+                        .onChange(of: hasLocationSwitchOn) { newValue in
+                            if newValue == true { locationFetcher.start() }
+                            else { location = nil }
+                        }
+                    
+                    if hasLocationSwitchOn {
+                        Button {
+                            location = locationFetcher.lastKnownLocation
+                            
+                            isShowingConfirmAlert = true
+                        } label: {
+                            Label(
+                                "Share My Current Location",
+                                systemImage: "location"
+                            )
+                        }
+                    }
+                }
+            }
+            .alert("Location saved!", isPresented: $isShowingConfirmAlert) {
+                Button("OK") { }
+            } message: {
+                Text("Your current location will be saved to remind you where you met this person.")
             }
             .sheet(isPresented: $isShowingImagePicker) {
                 ImagePicker(image: $inputImage)
             }
             .toolbar {
                 Button {
+                    // Save...
                     guard let inputImage = inputImage else { return }
                     guard let jpegData = inputImage.jpegData(
                         compressionQuality: 0.8
@@ -58,7 +91,9 @@ struct AddPersonView: View {
                     
                     let person = Person(
                         name: name,
-                        jpegData: jpegData
+                        jpegData: jpegData,
+                        latitude: location?.latitude,
+                        longitude: location?.longitude
                     )
                     
                     viewModel.addPerson(person)
@@ -79,7 +114,6 @@ struct AddPersonView: View {
         image = Image(uiImage: uiImage)
     }
 }
-
 
 struct AddPersonView_Previews: PreviewProvider {
     static var previews: some View {

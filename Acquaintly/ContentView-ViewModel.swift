@@ -10,7 +10,7 @@ import Foundation
 class ViewModel: ObservableObject {
     @Published var people: [Person]
     
-    let savePath = FileManager.documentsDirectory.appendingPathComponent("SavedPeopple")
+    let savePath = FileManager.documentsDirectory.appendingPathComponent("SavedPeople")
     
     init() {
         do {
